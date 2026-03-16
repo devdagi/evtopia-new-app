@@ -1,0 +1,2 @@
+D:/Projects/Mobile Applications/Flutter/Evtopia-App/android/app/.cxx/RelWithDebInfo/3f14k402/x86_64/CMakeFiles/edit_cache.dir
+D:/Projects/Mobile Applications/Flutter/Evtopia-App/android/app/.cxx/RelWithDebInfo/3f14k402/x86_64/CMakeFiles/rebuild_cache.dir

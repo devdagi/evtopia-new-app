@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "365813639617",
+    "project_id": "evtopia-cabd3",
+    "storage_bucket": "evtopia-cabd3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:365813639617:android:9df2468cba5e36e16ba740",
+        "android_client_info": {
+          "package_name": "com.evtopia"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBN7Ir5RIxnrH24nZmz83xvj5Oq7BWPWsg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

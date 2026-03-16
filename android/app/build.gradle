@@ -1,0 +1,204 @@
+// buildscript {
+//     repositories {
+//         google()
+//         // Add any other repositories needed for your buildscript dependencies
+//     }
+//     dependencies {
+//         classpath 'com.android.tools.build:gradle:7.3.1'
+//         // Add any other dependencies for the buildscript if needed
+//     }
+// }
+
+// plugins {
+//     id "com.android.application"
+//     // START: FlutterFire Configuration
+//     id 'com.google.gms.google-services'
+//     // END: FlutterFire Configuration
+//     id "kotlin-android"
+//     id "dev.flutter.flutter-gradle-plugin"
+// }
+
+// def keystoreProperties = new Properties()
+// def keystorePropertiesFile = rootProject.file('key.properties')
+// if (keystorePropertiesFile.exists()) {
+//     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+// }
+
+// def localProperties = new Properties()
+// def localPropertiesFile = rootProject.file('local.properties')
+// if (localPropertiesFile.exists()) {
+//     localPropertiesFile.withReader('UTF-8') { reader ->
+//         localProperties.load(reader)
+//     }
+// }
+
+// def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+// if (flutterVersionCode == null) {
+//     flutterVersionCode = '1'
+// }
+
+// def flutterVersionName = localProperties.getProperty('flutter.versionName')
+// if (flutterVersionName == null) {
+//     flutterVersionName = '1.0'
+// }
+
+// android {
+//     namespace "com.evtopia"
+//     compileSdkVersion 34
+//     ndkVersion = "25.1.8937393"
+
+//     compileOptions {
+//         coreLibraryDesugaringEnabled true
+//         sourceCompatibility JavaVersion.VERSION_1_8
+//         targetCompatibility JavaVersion.VERSION_1_8
+//     }
+
+//     kotlinOptions {
+//         jvmTarget = '1.8'
+//     }
+
+//     sourceSets {
+//         main.java.srcDirs += 'src/main/kotlin'
+//     }
+
+//     defaultConfig {
+//         applicationId "com.evtopia"
+//         multiDexEnabled true
+//         minSdkVersion 23
+//         targetSdkVersion flutter.targetSdkVersion
+//         versionCode flutterVersionCode.toInteger()
+//         versionName flutterVersionName
+//     }
+
+//     signingConfigs {
+//         release {
+//             keyAlias keystoreProperties['keyAlias']
+//             keyPassword keystoreProperties['keyPassword']
+//             storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+//             storePassword keystoreProperties['storePassword']
+//         }
+//     }
+
+//     buildTypes {
+//         release {
+//             signingConfig signingConfigs.release
+//         }
+//     }
+// }
+
+// flutter {
+//     source '../..'
+// }
+
+// dependencies {
+//     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.2.2'
+    // implementation 'androidx.window:window:1.0.0'
+    // implementation 'androidx.window:window-java:1.0.0'
+    // implementation 'com.google.firebase:firebase-messaging:15.0.0'
+// }
+
+// apply plugin: 'com.google.gms.google-services'
+
+
+
+plugins {
+    id "com.android.application"
+    // START: FlutterFire Configuration
+    id 'com.google.gms.google-services'
+    // END: FlutterFire Configuration
+    id "kotlin-android"
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+
+
+// Load keystore properties
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+// Load local properties
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+// Set Flutter version code and name
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
+def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
+
+android {
+    namespace = "com.evtopia"
+    compileSdk = 35
+    ndkVersion = "27.0.12077973"
+
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8
+    }
+
+    defaultConfig {
+        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        applicationId = "com.evtopia"
+        // You can update the following values to match your application needs.
+        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        minSdkVersion flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+    }
+
+     
+
+    // Signing configuration for release build
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword keystoreProperties['storePassword']
+        }
+    }
+
+    buildTypes {
+        release {
+             minifyEnabled false // Disables R8
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+      
+            // TODO: Add your own signing config for the release build.
+            // Signing with the debug keys for now, so `flutter run --release` works.
+            signingConfig = signingConfigs.release
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}
+
+// Firebase and Google Play Services dependencies
+dependencies {
+    // Firebase BOM
+    implementation platform("com.google.firebase:firebase-bom:32.7.2")
+    implementation "com.google.firebase:firebase-auth"
+    implementation "com.google.android.gms:play-services-auth:20.7.0" 
+    implementation "com.google.firebase:firebase-analytics"
+    // Firebase dependencies
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0"  
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+     implementation 'androidx.window:window:1.0.0'
+    implementation 'androidx.window:window-java:1.0.0'
+    implementation 'com.google.firebase:firebase-messaging:15.0.0'
+}
