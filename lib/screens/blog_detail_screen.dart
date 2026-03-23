@@ -133,17 +133,13 @@ class BlogDetailScreen extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'Editorial',
+                                  'EVTOPIA Knowledge Hub',
                                   style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                                 ),
                                 Text('5 min read', style: theme.textTheme.labelSmall?.copyWith(color: Colors.black38)),
                               ],
                             ),
                             const Spacer(),
-                            IconButton(
-                              onPressed: () {},
-                              icon: const Icon(Icons.share_outlined, size: 20, color: Colors.black45),
-                            ),
                           ],
                         ).animate().fadeIn(delay: 300.ms),
 

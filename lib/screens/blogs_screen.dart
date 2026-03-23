@@ -281,7 +281,7 @@ class _BlogCard extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Editorial',
+                                'EVTOPIA Knowledge Hub',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   fontWeight: FontWeight.w700,
                                   color: Colors.black87,

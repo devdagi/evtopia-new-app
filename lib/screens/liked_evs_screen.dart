@@ -305,21 +305,6 @@ class _LikedEvTile extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: LikedEvsScreen._primaryGreen.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'ETB ${(product.discountPrice ?? product.price).toStringAsFixed(0)}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: LikedEvsScreen._primaryGreen,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
