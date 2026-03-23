@@ -40,14 +40,12 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(homeDataProvider);
-        ref.invalidate(latestProductsSectionProvider);
         ref.invalidate(productsProvider);
         ref.invalidate(latestProductsProvider);
         if (user != null) {
           ref.read(notificationProvider.notifier).refreshUnreadCount(user.id);
         }
         await ref.read(homeDataProvider.future);
-        await ref.read(latestProductsSectionProvider.future);
         await ref.read(productsProvider.future);
         await ref.read(latestProductsProvider.future);
       },
@@ -137,7 +135,7 @@ class _Content extends ConsumerWidget {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _LatestProductsSection(),
+            child: _PopularProductsSection(products: d.popularProducts),
           ),
         ),
         SliverToBoxAdapter(child: SizedBox(height: 32)),
@@ -188,12 +186,12 @@ class _Content extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _SectionHeader(
-              title: "Our Latest EV's",
-              subtitle: 'Explore popular EVs and accessories',
+              title: 'Recently Posted',
+              subtitle: 'Stay updated with new arrivals',
               trailing: IconButton(
                 icon: const Icon(Icons.arrow_forward_rounded),
                 onPressed: () => mainTabRequestNotifier.value = 1,
-                tooltip: "View all EV's",
+                tooltip: 'View all arrivals',
               ),
             ),
           ),
@@ -211,7 +209,7 @@ class _Content extends ConsumerWidget {
               subtitle: 'Latest insights & stories',
               trailing: IconButton(
                 icon: const Icon(Icons.arrow_forward_rounded),
-                onPressed: () => Navigator.of(context).pushNamed('/blogs'),
+                onPressed: () => mainTabRequestNotifier.value = 2,
                 tooltip: 'View all blogs',
               ),
             ),
@@ -291,77 +289,40 @@ class _SectionHeader extends StatelessWidget {
 }
 
 /// Latest Products from GET /api/latest-products.
-class _LatestProductsSection extends ConsumerWidget {
-  const _LatestProductsSection();
+class _PopularProductsSection extends StatelessWidget {
+  const _PopularProductsSection({required this.products});
 
+  final List<ProductModel> products;
   static const double _sectionHeight = 220;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(latestProductsSectionProvider);
+  Widget build(BuildContext context) {
+    if (products.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const _SectionHeader(
-          title: 'Latest Products',
-          subtitle: 'Fresh arrivals from the market',
+          title: 'Popular Products',
+          subtitle: 'Our community favorite picks',
         ),
         const SizedBox(height: 14),
-        async.when(
-          data: (res) {
-            if (res == null || res.products.isEmpty) {
-              return SizedBox(
-                height: 180,
-                child: Center(
-                  child: Text(
-                    'No products right now',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+        SizedBox(
+          height: _sectionHeight,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: products.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, i) => RepaintBoundary(
+              child: _ProductCard(
+                product: products[i],
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (ctx) => ProductDetailScreen(productId: products[i].id),
                   ),
                 ),
-              );
-            }
-            final products = res.products;
-            return SizedBox(
-              height: _sectionHeight,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: products.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (context, i) => RepaintBoundary(
-                  child: _ProductCard(
-                    product: products[i],
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (ctx) => ProductDetailScreen(productId: products[i].id),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-          loading: () => const SkeletonHorizontalCards(cardWidth: 148, cardHeight: 220, itemCount: 3),
-          error: (e, st) => Padding(
-            padding: const EdgeInsets.all(24),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "Couldn't load products",
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: () => ref.invalidate(latestProductsSectionProvider),
-                    icon: const Icon(Icons.refresh_rounded, size: 20),
-                    label: const Text('Retry'),
-                  ),
-                ],
               ),
             ),
           ),
@@ -677,7 +638,7 @@ class _ProductsSection extends ConsumerWidget {
       },
       loading: () => const SizedBox(
         height: _sectionHeight,
-        child: SkeletonHorizontalCards(cardWidth: 148, cardHeight: 220, itemCount: 4),
+        child: const SkeletonHorizontalCards(cardWidth: 180, cardHeight: 220, itemCount: 4),
       ),
       error: (e, st) => _ProductsError(
         theme: Theme.of(context),
@@ -768,7 +729,7 @@ class _ProductCard extends StatelessWidget {
   final ProductModel product;
   final VoidCallback onTap;
 
-  static const double _cardWidth = 148;
+  static const double _cardWidth = 180;
 
   @override
   Widget build(BuildContext context) {
@@ -794,7 +755,7 @@ class _ProductCard extends StatelessWidget {
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 child: AspectRatio(
-                  aspectRatio: 1.05,
+                  aspectRatio: 1.35,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -810,7 +771,7 @@ class _ProductCard extends StatelessWidget {
                       else
                         OptimizedNetworkImage(
                           url: url,
-                          cacheWidth: 148,
+                          cacheWidth: 180,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => ColoredBox(
                             color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
@@ -902,8 +863,8 @@ class _ProductCard extends StatelessWidget {
                       children: [
                         Text(
                           showDiscount
-                              ? 'ETB ${product.discountPrice!.toStringAsFixed(0)}'
-                              : 'ETB ${product.price.toStringAsFixed(0)}',
+                              ? 'ETB ${product.discountPrice!.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]},")}'
+                              : 'ETB ${product.price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]},")}',
                           style: theme.textTheme.titleSmall?.copyWith(
                             color: primaryGreen,
                             fontWeight: FontWeight.w800,
@@ -912,7 +873,7 @@ class _ProductCard extends StatelessWidget {
                         if (showDiscount) ...[
                           const SizedBox(width: 6),
                           Text(
-                            'ETB ${product.price.toStringAsFixed(0)}',
+                            'ETB ${product.price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]},")}',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                               decoration: TextDecoration.lineThrough,
@@ -922,6 +883,17 @@ class _ProductCard extends StatelessWidget {
                         ],
                       ],
                     ),
+                    if (product.createdAt != null && product.createdAt!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        product.createdAt!,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

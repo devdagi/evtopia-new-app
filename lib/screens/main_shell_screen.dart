@@ -8,8 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import '../providers/home_provider.dart';
 import '../providers/notification_provider.dart';
+import 'blogs_screen.dart';
 import 'home_tab_screen.dart';
-import 'our_service_screen.dart';
 import 'products_screen.dart';
 import 'profile_screen.dart';
 
@@ -59,7 +59,7 @@ class _NotificationPollingControllerState
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
-/// Main shell after login: bottom nav with Home, Products, Our Service, Profile.
+/// Main shell after login: bottom nav with Home, EV's, Blog, Profile.
 class MainShellScreen extends StatefulWidget {
   const MainShellScreen({super.key});
 
@@ -105,7 +105,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   static const List<_NavItem> _tabs = [
     _NavItem(label: 'Home', icon: Icons.home_rounded),
     _NavItem(label: "EV's", icon: Icons.electric_car_rounded),
-    _NavItem(label: 'Service', icon: Icons.build_circle_rounded),
+    _NavItem(label: 'Blog', icon: Icons.article_rounded),
     _NavItem(label: 'Profile', icon: Icons.person_rounded),
   ];
 
@@ -113,7 +113,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      appBar: (_currentIndex == 0 || _currentIndex == 1)
+      appBar: (_currentIndex == 0 || _currentIndex == 1 || _currentIndex == 2)
           ? null
           : AppBar(
               title: Text(_tabs[_currentIndex].label),
@@ -129,7 +129,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 children: [
                   if (_visitedTabs.contains(0)) const HomeTabScreen() else const SizedBox.shrink(),
                   if (_visitedTabs.contains(1)) const ProductsScreen() else const SizedBox.shrink(),
-                  if (_visitedTabs.contains(2)) const OurServiceScreen() else const SizedBox.shrink(),
+                  if (_visitedTabs.contains(2)) const BlogsScreen() else const SizedBox.shrink(),
                   if (_visitedTabs.contains(3)) const ProfileScreen() else const SizedBox.shrink(),
                 ],
               ),

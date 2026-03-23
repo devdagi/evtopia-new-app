@@ -598,7 +598,7 @@ class _ProductImageSectionState extends State<_ProductImageSection> {
                     thumbnails.length,
                     (i) => AnimatedContainer(
                       duration: const Duration(milliseconds: 400),
-                      curve: Curves.elasticOut,
+                      curve: Curves.easeOutCubic,
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
                         color: _currentIndex == i
@@ -1265,28 +1265,12 @@ class _SimilarProductsSection extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Row(
-            children: [
-              Text(
-                'Similar Products',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.2,
-                ),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: () {}, // Could navigate to a search result page
-                child: Text(
-                  'View All',
-                  style: TextStyle(
-                    color: _primaryGreen,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ],
+          child: Text(
+            'Similar Products',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.2,
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -1325,17 +1309,19 @@ class _SimilarProductCard extends StatelessWidget {
     final thumbUrl = product.thumbnail != null && product.thumbnail!.isNotEmpty
         ? imageUrl(product.thumbnail)
         : '';
+    final showDiscount = product.discountPrice != null && product.discountPrice! > 0;
+
     return Container(
-      width: 200,
-      margin: const EdgeInsets.only(right: 16, bottom: 20, top: 4),
+      width: 210,
+      margin: const EdgeInsets.only(right: 18, bottom: 20, top: 4),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
         border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
@@ -1347,22 +1333,55 @@ class _SimilarProductCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             AspectRatio(
-              aspectRatio: 1.1,
-              child: thumbUrl.isNotEmpty
-                  ? OptimizedNetworkImage(
-                      url: thumbUrl,
-                      cacheWidth: 300,
-                      cacheHeight: 330,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported, size: 40, color: theme.colorScheme.outline),
-                    )
-                  : ColoredBox(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      child: Icon(Icons.image_not_supported, size: 40, color: theme.colorScheme.outline),
+              aspectRatio: 1.25,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  thumbUrl.isNotEmpty
+                      ? OptimizedNetworkImage(
+                          url: thumbUrl,
+                          cacheWidth: 400,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported,
+                              size: 40, color: theme.colorScheme.outline),
+                        )
+                      : ColoredBox(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          child: Icon(Icons.image_not_supported,
+                              size: 40, color: theme.colorScheme.outline),
+                        ),
+                  if (showDiscount)
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2))
+                          ],
+                        ),
+                        child: Text(
+                          'SALE',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
                     ),
+                ],
+              ),
             ),
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1370,40 +1389,48 @@ class _SimilarProductCard extends StatelessWidget {
                     product.name,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w800,
-                      height: 1.2,
+                      height: 1.3,
+                      fontSize: 14,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
                     children: [
                       Text(
                         'ETB',
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: _primaryGreen,
                           fontWeight: FontWeight.w700,
+                          fontSize: 10,
                         ),
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        product.discountPrice != null && product.discountPrice! > 0
-                            ? product.discountPrice!.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')
-                            : product.price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},'),
+                        showDiscount
+                            ? product.discountPrice!.toStringAsFixed(0).replaceAllMapped(
+                                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')
+                            : product.price.toStringAsFixed(0).replaceAllMapped(
+                                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},'),
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: _primaryGreen,
                           fontWeight: FontWeight.w900,
+                          fontSize: 17,
                         ),
                       ),
                     ],
                   ),
-                  if (product.discountPrice != null && product.discountPrice! > 0) ...[
-                    const SizedBox(height: 2),
+                  if (showDiscount) ...[
+                    const SizedBox(height: 4),
                     Text(
-                      'ETB ${product.price.toStringAsFixed(0)}',
+                      'ETB ${product.price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
                       style: theme.textTheme.labelSmall?.copyWith(
                         decoration: TextDecoration.lineThrough,
                         color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: 11,
                       ),
                     ),
                   ],

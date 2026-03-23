@@ -18,6 +18,7 @@ class ProductModel {
     this.peakPower,
     this.accelerationTime,
     this.isFavorite = false,
+    this.createdAt,
   });
 
   final int id;
@@ -43,6 +44,8 @@ class ProductModel {
   final String? accelerationTime;
   /// Whether the current user has favorited this product.
   final bool isFavorite;
+  /// The date the product was posted.
+  final String? createdAt;
 
   ProductModel copyWith({
     int? id,
@@ -62,6 +65,7 @@ class ProductModel {
     String? peakPower,
     String? accelerationTime,
     bool? isFavorite,
+    String? createdAt,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -81,6 +85,7 @@ class ProductModel {
       peakPower: peakPower ?? this.peakPower,
       accelerationTime: accelerationTime ?? this.accelerationTime,
       isFavorite: isFavorite ?? this.isFavorite,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 
@@ -112,6 +117,7 @@ class ProductModel {
       peakPower: _str(json['peak_power']),
       accelerationTime: _str(json['acceleration_time']),
       isFavorite: json['is_favorite'] == true,
+      createdAt: _str(json['created_at']),
     );
   }
 }

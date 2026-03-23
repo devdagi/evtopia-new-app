@@ -23,10 +23,6 @@ final latestEvsProvider = FutureProvider<List<LatestEvModel>>((ref) async {
   return ref.watch(homeServiceProvider).getLatestEvs();
 });
 
-/// GET /api/latest-products – for home "Latest Products" section (same as web).
-final latestProductsSectionProvider = FutureProvider<ProductsResponse?>((ref) async {
-  return ref.watch(homeServiceProvider).getLatestProducts(limit: 8);
-});
 
 /// GET /api/products?page=1&per_page=12&search=&min_price=0&max_price=10000000
 final productsProvider = FutureProvider<ProductsResponse?>((ref) async {
