@@ -12,6 +12,7 @@ import 'blogs_screen.dart';
 import 'home_tab_screen.dart';
 import 'products_screen.dart';
 import 'profile_screen.dart';
+import '../widgets/welcome_popup.dart';
 
 /// Invisible widget that polls notification count every 20 seconds. Must be built
 /// under a [ProviderScope] so [ref] is available.
@@ -71,11 +72,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
   int _currentIndex = 0;
   /// Lazy tabs: only build screens after user has visited that tab (reduces initial jank).
   final Set<int> _visitedTabs = {0};
+  static bool _showedWelcome = false;
 
   @override
   void initState() {
     super.initState();
     mainTabRequestNotifier.addListener(_onTabRequest);
+    if (!_showedWelcome) {
+      _showedWelcome = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showWelcomePopUp(context);
+      });
+    }
   }
 
   @override

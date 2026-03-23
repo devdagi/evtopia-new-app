@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:gap/gap.dart';
 
 import '../models/post_model.dart';
 import '../providers/home_provider.dart';
@@ -9,11 +11,12 @@ import '../utils/image_url.dart';
 import '../widgets/optimized_network_image.dart';
 import '../widgets/skeleton_loader.dart';
 
-/// Shows a single blog post (from GET /api/blog-details). Tap related post opens this screen with that id.
+/// Shows a single blog post with a premium, focused reading experience.
 class BlogDetailScreen extends ConsumerWidget {
   const BlogDetailScreen({super.key, required this.postId});
 
   final int postId;
+  static const _primaryGreen = Color(0xFF2E7D32);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,144 +24,167 @@ class BlogDetailScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: Colors.white,
       body: async.when(
         data: (detail) {
-          if (detail == null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline_rounded, size: 48, color: theme.colorScheme.error),
-                  const SizedBox(height: 16),
-                  const Text('Blog not found'),
-                  const SizedBox(height: 16),
-                  TextButton.icon(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('Back'),
-                  ),
-                ],
-              ),
-            );
-          }
+          if (detail == null) return _ErrorState(theme: theme);
+
           return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
             slivers: [
               SliverAppBar(
-                expandedHeight: 220,
+                expandedHeight: 320,
                 pinned: true,
+                stretch: true,
+                backgroundColor: _primaryGreen,
+                elevation: 0,
                 leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_rounded),
+                  icon: const CircleAvatar(
+                    backgroundColor: Colors.black26,
+                    child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+                  ),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
                 flexibleSpace: FlexibleSpaceBar(
-                  background: _BannerImage(url: imageUrl(detail.post.banner)),
+                  stretchModes: const [StretchMode.zoomBackground],
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _BannerImage(url: imageUrl(detail.post.banner)),
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Colors.black38, Colors.transparent, Colors.black54],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (detail.post.categories.isNotEmpty)
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: detail.post.categories
-                              .map((c) => Chip(
-                                    label: Text(c, style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600)),
-                                    backgroundColor: theme.colorScheme.primaryContainer,
-                                    padding: EdgeInsets.zero,
-                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  ))
-                              .toList(),
-                        ),
-                      if (detail.post.categories.isNotEmpty) const SizedBox(height: 12),
-                      if (detail.post.createdAt != null)
-                        Text(
-                          detail.post.createdAt!,
-                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                        ),
-                      const SizedBox(height: 8),
-                      Text(
-                        detail.post.title,
-                        style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 16),
-                      if (detail.post.description != null && detail.post.description!.isNotEmpty)
-                        HtmlWidget(
-                          detail.post.description!,
-                          textStyle: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
-                          onTapUrl: (url) async {
-                            final uri = Uri.tryParse(url);
-                            if (uri != null && await canLaunchUrl(uri)) {
-                              await launchUrl(uri, mode: LaunchMode.externalApplication);
-                              return true;
-                            }
-                            return false;
-                          },
-                        ),
-                      if (detail.post.pdfs != null && detail.post.pdfs!.isNotEmpty) ...[
-                        const SizedBox(height: 24),
-                        Text('Downloads', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 8),
-                        ...detail.post.pdfs!.map((pdf) => ListTile(
-                              leading: const Icon(Icons.picture_as_pdf_rounded, color: Colors.red),
-                              title: Text(pdf.name ?? 'PDF'),
-                              subtitle: pdf.size != null ? Text(pdf.size!) : null,
-                              onTap: pdf.url != null && pdf.url!.isNotEmpty
-                                  ? () => _openUrl(context, pdf.url!)
-                                  : null,
-                            )),
-                      ],
-                      if (detail.post.videoLinks != null && detail.post.videoLinks!.isNotEmpty) ...[
-                        const SizedBox(height: 24),
-                        Text('Videos', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 8),
-                        ...detail.post.videoLinks!.map((url) => ListTile(
-                              leading: const Icon(Icons.video_library_rounded),
-                              title: Text(url, style: theme.textTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-                              onTap: () => _openUrl(context, url),
-                            )),
-                      ],
-                      if (detail.post.images != null && detail.post.images!.isNotEmpty) ...[
-                        const SizedBox(height: 24),
-                        Text('Images', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          height: 120,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: detail.post.images!.length,
-                            separatorBuilder: (_, __) => const SizedBox(width: 8),
-                            itemBuilder: (context, i) {
-                              final imgUrl = detail.post.images![i];
-                              return ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: SizedBox(
-                                  width: 160,
-                                  child: OptimizedNetworkImage(
-                                    url: imageUrl(imgUrl),
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.grey, child: SizedBox.expand()),
+                child: Transform.translate(
+                  offset: const Offset(0, -30),
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Category and Date
+                        Row(
+                          children: [
+                            if (detail.post.categories.isNotEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: _primaryGreen.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  detail.post.categories.first.toUpperCase(),
+                                  style: const TextStyle(
+                                    color: _primaryGreen,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1,
                                   ),
                                 ),
-                              );
-                            },
+                              ),
+                            if (detail.post.categories.isNotEmpty) const Gap(12),
+                            if (detail.post.createdAt != null)
+                              Text(
+                                detail.post.createdAt!,
+                                style: theme.textTheme.labelMedium?.copyWith(color: Colors.black38),
+                              ),
+                          ],
+                        ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1, end: 0),
+
+                        const Gap(20),
+                        
+                        // Title
+                        Text(
+                          detail.post.title,
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: Colors.black,
+                            height: 1.2,
+                            letterSpacing: -0.5,
                           ),
-                        ),
+                        ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0),
+
+                        const Gap(24),
+
+                        // Author Section
+                        Row(
+                          children: [
+                            const CircleAvatar(
+                              radius: 20,
+                              backgroundColor: Color(0xFFE8F5E9),
+                              child: Icon(Icons.person_outline_rounded, color: _primaryGreen),
+                            ),
+                            const Gap(12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Editorial',
+                                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                                ),
+                                Text('5 min read', style: theme.textTheme.labelSmall?.copyWith(color: Colors.black38)),
+                              ],
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              onPressed: () {},
+                              icon: const Icon(Icons.share_outlined, size: 20, color: Colors.black45),
+                            ),
+                          ],
+                        ).animate().fadeIn(delay: 300.ms),
+
+                        const Gap(32),
+                        const Divider(height: 1, color: Colors.black12),
+                        const Gap(32),
+
+                        // Content
+                        if (detail.post.description != null && detail.post.description!.isNotEmpty)
+                          HtmlWidget(
+                            detail.post.description!,
+                            textStyle: theme.textTheme.bodyLarge?.copyWith(
+                              height: 1.7,
+                              color: Colors.black87,
+                              fontSize: 16,
+                            ),
+                            onTapUrl: (url) async {
+                              final uri = Uri.tryParse(url);
+                              if (uri != null && await canLaunchUrl(uri)) {
+                                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                return true;
+                              }
+                              return false;
+                            },
+                          ).animate().fadeIn(delay: 400.ms),
+
+                        // Attachments (PDFs/Videos)
+                        if ((detail.post.pdfs?.isNotEmpty ?? false) || (detail.post.videoLinks?.isNotEmpty ?? false))
+                          _AttachmentsSection(post: detail.post).animate().fadeIn(delay: 500.ms),
+
+                        // Image Gallery
+                        if (detail.post.images != null && detail.post.images!.isNotEmpty)
+                          _ImageGallery(images: detail.post.images!).animate().fadeIn(delay: 600.ms),
+
+                        // Related Posts
+                        if (detail.relatedPosts.isNotEmpty)
+                          _RelatedSection(posts: detail.relatedPosts).animate().fadeIn(delay: 700.ms),
+
+                        const Gap(40),
                       ],
-                      if (detail.relatedPosts.isNotEmpty) ...[
-                        const SizedBox(height: 32),
-                        Text('Related posts', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 12),
-                        ...detail.relatedPosts.map((post) => _RelatedPostCard(
-                              post: post,
-                              onTap: () => Navigator.of(context).pushNamed('/blog-detail', arguments: post.id),
-                            )),
-                      ],
-                      const SizedBox(height: 40),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -166,143 +192,198 @@ class BlogDetailScreen extends ConsumerWidget {
           );
         },
         loading: () => const SkeletonProductDetail(),
-        error: (err, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline_rounded, size: 48, color: theme.colorScheme.error),
-                const SizedBox(height: 16),
-                const Text('Failed to load blog'),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: () => ref.invalidate(blogDetailProvider(postId)),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
-                ),
-              ],
-            ),
-          ),
-        ),
+        error: (err, _) => _ErrorState(theme: theme, onRetry: () => ref.invalidate(blogDetailProvider(postId))),
       ),
     );
-  }
-
-  static Future<void> _openUrl(BuildContext context, String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cannot open: $url'), behavior: SnackBarBehavior.floating),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to open link'), behavior: SnackBarBehavior.floating),
-        );
-      }
-    }
   }
 }
 
 class _BannerImage extends StatelessWidget {
   const _BannerImage({required this.url});
-
   final String url;
+  @override
+  Widget build(BuildContext context) {
+    if (url.isEmpty) return const ColoredBox(color: Color(0xFFF5F5F5), child: Center(child: Icon(Icons.article_rounded, size: 64, color: Colors.black12)));
+    return OptimizedNetworkImage(url: url, fit: BoxFit.cover);
+  }
+}
+
+class _AttachmentsSection extends StatelessWidget {
+  const _AttachmentsSection({required this.post});
+  final PostModel post;
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Gap(40),
+        const Text('Explore More', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+        const Gap(16),
+        if (post.pdfs != null)
+          ...post.pdfs!.map((pdf) => _AttachmentTile(
+            icon: Icons.picture_as_pdf_rounded,
+            title: pdf.name ?? 'Document',
+            subtitle: pdf.size ?? 'View PDF',
+            color: Colors.redAccent,
+            onTap: pdf.url != null ? () => _openUrl(pdf.url!) : null,
+          )),
+        if (post.videoLinks != null)
+          ...post.videoLinks!.map((url) => _AttachmentTile(
+            icon: Icons.play_circle_fill_rounded,
+            title: 'Watch Video',
+            subtitle: url,
+            color: BlogDetailScreen._primaryGreen,
+            onTap: () => _openUrl(url),
+          )),
+      ],
+    );
+  }
+
+  void _openUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null && await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+class _AttachmentTile extends StatelessWidget {
+  const _AttachmentTile({required this.icon, required this.title, required this.subtitle, required this.color, this.onTap});
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    if (url.isEmpty) {
-      return ColoredBox(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: const Center(child: Icon(Icons.article_rounded, size: 64)),
-      );
-    }
-    return OptimizedNetworkImage(
-      url: url,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => ColoredBox(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: const Center(child: Icon(Icons.article_rounded, size: 64)),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: color.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        child: ListTile(
+          onTap: onTap,
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+          subtitle: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+        ),
       ),
     );
   }
 }
 
-class _RelatedPostCard extends StatelessWidget {
-  const _RelatedPostCard({required this.post, required this.onTap});
-
-  final PostModel post;
-  final VoidCallback onTap;
-
+class _ImageGallery extends StatelessWidget {
+  const _ImageGallery({required this.images});
+  final List<String> images;
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final url = imageUrl(post.banner);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        borderRadius: BorderRadius.circular(12),
-        clipBehavior: Clip.antiAlias,
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox(
-                    width: 80,
-                    height: 80,
-                    child: url.isEmpty
-                        ? ColoredBox(
-                            color: theme.colorScheme.surface,
-                            child: Icon(Icons.article_outlined, color: theme.colorScheme.onSurfaceVariant),
-                          )
-                        : OptimizedNetworkImage(
-                            url: url,
-                            cacheWidth: 160,
-                            cacheHeight: 160,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => ColoredBox(
-                              color: theme.colorScheme.surface,
-                              child: Icon(Icons.article_outlined, color: theme.colorScheme.onSurfaceVariant),
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        post.title,
-                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (post.createdAt != null)
-                        Text(
-                          post.createdAt!,
-                          style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                        ),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right_rounded),
-              ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Gap(40),
+        const Text('Gallery', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+        const Gap(16),
+        SizedBox(
+          height: 160,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: images.length,
+            physics: const BouncingScrollPhysics(),
+            separatorBuilder: (_, __) => const Gap(12),
+            itemBuilder: (context, i) => ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: SizedBox(
+                width: 240,
+                child: OptimizedNetworkImage(url: imageUrl(images[i]), fit: BoxFit.cover),
+              ),
             ),
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _RelatedSection extends StatelessWidget {
+  const _RelatedSection({required this.posts});
+  final List<PostModel> posts;
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Gap(40),
+        const Text('Related Stories', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+        const Gap(16),
+        ...posts.take(3).map((p) => _RelatedTile(post: p)),
+      ],
+    );
+  }
+}
+
+class _RelatedTile extends StatelessWidget {
+  const _RelatedTile({required this.post});
+  final PostModel post;
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => Navigator.of(context).pushReplacementNamed('/blog-detail', arguments: post.id),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                width: 80,
+                height: 80,
+                child: OptimizedNetworkImage(url: imageUrl(post.banner), fit: BoxFit.cover),
+              ),
+            ),
+            const Gap(16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    post.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, height: 1.3),
+                  ),
+                  if (post.createdAt != null)
+                    Text(post.createdAt!, style: const TextStyle(color: Colors.black38, fontSize: 11)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.theme, this.onRetry});
+  final ThemeData theme;
+  final VoidCallback? onRetry;
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline_rounded, size: 48, color: Colors.orange),
+          const Gap(16),
+          const Text('Blog not found or failed to load', style: TextStyle(fontWeight: FontWeight.w600)),
+          const Gap(24),
+          if (onRetry != null) FilledButton(onPressed: onRetry, style: FilledButton.styleFrom(backgroundColor: BlogDetailScreen._primaryGreen), child: const Text('Retry')),
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Back')),
+        ],
       ),
     );
   }

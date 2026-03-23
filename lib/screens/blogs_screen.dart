@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:gap/gap.dart';
 
 import '../models/post_model.dart';
 import '../providers/home_provider.dart';
@@ -7,7 +10,7 @@ import '../utils/image_url.dart';
 import '../widgets/optimized_network_image.dart';
 import '../widgets/skeleton_loader.dart';
 
-/// Lists all blogs (paginated). Medium-style design. Tap opens blog detail.
+/// Lists all blogs (paginated) with a premium, engaging UI.
 class BlogsScreen extends ConsumerStatefulWidget {
   const BlogsScreen({super.key});
 
@@ -17,6 +20,7 @@ class BlogsScreen extends ConsumerStatefulWidget {
 
 class _BlogsScreenState extends ConsumerState<BlogsScreen> {
   final ScrollController _scrollController = ScrollController();
+  static const _primaryGreen = Color(0xFF2E7D32);
 
   @override
   void initState() {
@@ -45,261 +49,325 @@ class _BlogsScreenState extends ConsumerState<BlogsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFAFAFA),
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        centerTitle: true,
-        title: Text(
-          'Blog',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-            letterSpacing: -0.5,
-          ),
-        ),
-        iconTheme: const IconThemeData(color: Colors.black87),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => ref.read(blogsListProvider.notifier).refresh(),
-            tooltip: 'Refresh',
-          ),
-        ],
-      ),
-      body: async.when(
-        data: (posts) {
-          if (posts.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.article_outlined,
-                    size: 64,
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        controller: _scrollController,
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // Premium Header
+          SliverAppBar(
+            expandedHeight: 160.0,
+            floating: false,
+            pinned: true,
+            stretch: true,
+            backgroundColor: _primaryGreen,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+              onPressed: () => Navigator.of(context).maybePop(),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                onPressed: () => ref.read(blogsListProvider.notifier).refresh(),
+              ),
+              const Gap(8),
+            ],
+            flexibleSpace: FlexibleSpaceBar(
+              stretchModes: const [StretchMode.zoomBackground, StretchMode.fadeTitle],
+              centerTitle: true,
+              title: Text(
+                'News & Blog',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 20,
+                  letterSpacing: -0.5,
+                  shadows: [
+                    Shadow(color: Colors.black.withValues(alpha: 0.2), offset: const Offset(0, 2), blurRadius: 4),
+                  ],
+                ),
+              ),
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF1B5E20), _primaryGreen],
+                    begin: Alignment.bottomRight,
+                    end: Alignment.topLeft,
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No stories yet',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                ),
+                child: Center(
+                  child: Opacity(
+                    opacity: 0.1,
+                    child: Icon(Icons.auto_stories_rounded, size: 120, color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Content
+          async.when(
+            data: (posts) {
+              if (posts.isEmpty) {
+                return SliverFillRemaining(
+                  child: _EmptyState(theme: theme),
+                );
+              }
+              return SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                sliver: AnimationLimiter(
+                  child: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        if (index == posts.length) {
+                          return _LoadMoreFooter(notifier: ref.read(blogsListProvider.notifier));
+                        }
+                        final post = posts[index];
+                        return AnimationConfiguration.staggeredList(
+                          position: index,
+                          duration: const Duration(milliseconds: 375),
+                          child: SlideAnimation(
+                            verticalOffset: 50.0,
+                            child: FadeInAnimation(
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 24),
+                                child: _BlogCard(
+                                  post: post,
+                                  isFeatured: index == 0,
+                                  onTap: () => Navigator.of(context).pushNamed('/blog-detail', arguments: post.id),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      childCount: posts.length + 1,
                     ),
                   ),
-                ],
-              ),
-            );
-          }
-          return RefreshIndicator(
-            onRefresh: () => ref.read(blogsListProvider.notifier).refresh(),
-            color: const Color(0xFF2E7D32),
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-              itemCount: posts.length + 1,
-              itemBuilder: (context, i) {
-                if (i == posts.length) {
-                  return _LoadMoreFooter(notifier: ref.read(blogsListProvider.notifier));
-                }
-                final post = posts[i];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 32),
-                  child: _MediumStyleCard(
-                    post: post,
-                    onTap: () => Navigator.of(context).pushNamed('/blog-detail', arguments: post.id),
-                  ),
-                );
-              },
-            ),
-          );
-        },
-        loading: () => const SkeletonProductList(itemCount: 6),
-        error: (err, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline_rounded, size: 48, color: theme.colorScheme.error),
-                const SizedBox(height: 16),
-                Text('Failed to load stories', style: theme.textTheme.bodyLarge),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: () => ref.read(blogsListProvider.notifier).refresh(),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
                 ),
-              ],
+              );
+            },
+            loading: () => const SliverFillRemaining(
+              child: SkeletonProductList(itemCount: 6),
+            ),
+            error: (err, _) => SliverFillRemaining(
+              child: _ErrorState(
+                theme: theme,
+                onRetry: () => ref.read(blogsListProvider.notifier).refresh(),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-/// Medium-style article card: image on top, then title, description, author line.
-class _MediumStyleCard extends StatelessWidget {
-  const _MediumStyleCard({required this.post, required this.onTap});
+class _BlogCard extends StatelessWidget {
+  const _BlogCard({required this.post, required this.onTap, this.isFeatured = false});
 
   final PostModel post;
   final VoidCallback onTap;
+  final bool isFeatured;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final url = imageUrl(post.banner);
-    final category = post.categories.isNotEmpty ? post.categories.first : null;
+    final category = post.categories.isNotEmpty ? post.categories.first : 'Sustainability';
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
+        border: Border.all(color: Colors.black.withValues(alpha: 0.03)),
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(24),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
           child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Featured image
-            AspectRatio(
-              aspectRatio: 2.0,
-              child: url.isEmpty
-                  ? ColoredBox(
-                      color: const Color(0xFFF0F0F0),
-                      child: Icon(
-                        Icons.article_outlined,
-                        size: 48,
-                        color: Colors.black26,
-                      ),
-                    )
-                  : OptimizedNetworkImage(
-                      url: url,
-                      cacheWidth: 800,
-                      cacheHeight: 400,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => ColoredBox(
-                        color: const Color(0xFFF0F0F0),
-                        child: Icon(Icons.article_outlined, size: 48, color: Colors.black26),
-                      ),
-                    ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Image
+              Stack(
                 children: [
-                  if (category != null && category.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
+                  AspectRatio(
+                    aspectRatio: isFeatured ? 1.6 : 1.9,
+                    child: url.isEmpty
+                        ? Container(
+                            color: const Color(0xFFF0F0F0),
+                            child: const Icon(Icons.article_rounded, size: 48, color: Colors.black12),
+                          )
+                        : OptimizedNetworkImage(
+                            url: url,
+                            cacheWidth: 1000,
+                            cacheHeight: 600,
+                            fit: BoxFit.cover,
+                          ),
+                  ),
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2E7D32).withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: Text(
                         category.toUpperCase(),
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: const Color(0xFF2E7D32),
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.0,
                         ),
                       ),
                     ),
-                  Text(
-                    post.title,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                      height: 1.25,
-                      letterSpacing: -0.3,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (post.shortDescription != null && (post.shortDescription ?? '').isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      post.shortDescription!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.black54,
-                        height: 1.5,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  // Author line (Medium-style: avatar, name, date)
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 14,
-                        backgroundColor: const Color(0xFF2E7D32).withValues(alpha: 0.15),
-                        child: Text(
-                          'E',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: const Color(0xFF2E7D32),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Evtopia',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (post.createdAt != null && post.createdAt!.isNotEmpty) ...[
-                        Text(
-                          ' · ',
-                          style: theme.textTheme.bodySmall?.copyWith(color: Colors.black45),
-                        ),
-                        Text(
-                          post.createdAt!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.black45,
-                          ),
-                        ),
-                      ],
-                    ],
                   ),
                 ],
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      post.title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: Colors.black,
+                        height: 1.3,
+                        fontSize: isFeatured ? 22 : 18,
+                        letterSpacing: -0.5,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Gap(12),
+                    if (post.shortDescription != null)
+                      Text(
+                        post.shortDescription!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.black54,
+                          height: 1.5,
+                          fontSize: isFeatured ? 15 : 14,
+                        ),
+                        maxLines: isFeatured ? 3 : 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    const Gap(20),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 14,
+                          backgroundColor: const Color(0xFF2E7D32).withValues(alpha: 0.1),
+                          child: const Icon(Icons.person_rounded, size: 16, color: Color(0xFF2E7D32)),
+                        ),
+                        const Gap(10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Editorial',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              if (post.createdAt != null)
+                                Text(
+                                  post.createdAt!,
+                                  style: theme.textTheme.labelSmall?.copyWith(color: Colors.black38),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.arrow_forward_rounded, size: 20, color: Colors.black26),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 }
 
-class _LoadMoreFooter extends ConsumerWidget {
-  const _LoadMoreFooter({required this.notifier});
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.theme});
+  final ThemeData theme;
 
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.auto_stories_rounded, size: 64, color: Colors.black12),
+          const Gap(16),
+          Text(
+            'New stories coming soon',
+            style: theme.textTheme.titleMedium?.copyWith(color: Colors.black38),
+          ),
+        ],
+      ).animate().fadeIn().scale(),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.theme, required this.onRetry});
+  final ThemeData theme;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline_rounded, size: 48, color: theme.colorScheme.error),
+          const Gap(16),
+          const Text('Couldn\'t load stories', style: TextStyle(fontWeight: FontWeight.w600)),
+          const Gap(24),
+          FilledButton(
+            onPressed: onRetry,
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF2E7D32)),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadMoreFooter extends StatelessWidget {
+  const _LoadMoreFooter({required this.notifier});
   final BlogsNotifier notifier;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     if (!notifier.hasMore) return const SizedBox.shrink();
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 24),
       child: Center(
-        child: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2E7D32)),
-        ),
+        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2E7D32)),
       ),
     );
   }

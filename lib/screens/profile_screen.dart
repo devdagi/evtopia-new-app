@@ -7,6 +7,10 @@ import '../providers/notification_provider.dart';
 import '../utils/image_url.dart';
 import '../widgets/auth_ui_common.dart';
 import '../widgets/skeleton_loader.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+
 
 /// Profile tab – from old_flutter more_layout: user card at top, then list of options
 /// (My Profile, Change Password, Log out). Tapping "My Profile" goes to edit form.
@@ -68,81 +72,94 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _UserInfoCard(user: user),
+              _UserInfoCard(user: user).animate().fadeIn(duration: 600.ms).slideY(begin: 0.1, end: 0),
               const SizedBox(height: 12),
-              _buildSection(
-                context,
-                title: 'Account Settings',
-                items: [
-                  _ProfileListItem(
-                    icon: Icons.person_outline_rounded,
-                    text: 'My Profile',
-                    onTap: () => Navigator.of(context).pushNamed('/edit-profile'),
-                  ),
-                  if (!user.emailVerified)
-                    _ProfileListItem(
-                      icon: Icons.mark_email_unread_rounded,
-                      text: 'Verify my email',
-                      onTap: () => Navigator.of(context).pushNamed('/verify-email'),
+              AnimationLimiter(
+                child: Column(
+                  children: AnimationConfiguration.toStaggeredList(
+                    duration: const Duration(milliseconds: 375),
+                    childAnimationBuilder: (widget) => SlideAnimation(
+                      horizontalOffset: 50.0,
+                      child: FadeInAnimation(child: widget),
                     ),
-                  _ProfileListItem(
-                    icon: Icons.lock_reset_rounded,
-                    text: 'Change Password',
-                    onTap: () => Navigator.of(context).pushNamed('/change-password'),
+                    children: [
+                      _buildSection(
+                        context,
+                        title: 'Account Settings',
+                        items: [
+                          _ProfileListItem(
+                            icon: Icons.person_outline_rounded,
+                            text: 'My Profile',
+                            onTap: () => Navigator.of(context).pushNamed('/edit-profile'),
+                          ),
+                          if (!user.emailVerified)
+                            _ProfileListItem(
+                              icon: Icons.mark_email_unread_rounded,
+                              text: 'Verify my email',
+                              onTap: () => Navigator.of(context).pushNamed('/verify-email'),
+                            ),
+                          _ProfileListItem(
+                            icon: Icons.lock_reset_rounded,
+                            text: 'Change Password',
+                            onTap: () => Navigator.of(context).pushNamed('/change-password'),
+                          ),
+                          _ProfileListItem(
+                            icon: Icons.notifications_outlined,
+                            text: 'Notifications',
+                            onTap: () => Navigator.of(context).pushNamed('/notifications'),
+                            badgeCount: ref.watch(notificationProvider).unreadCount,
+                          ),
+                        ],
+                      ),
+                      _buildSection(
+                        context,
+                        title: 'My Activity',
+                        items: [
+                          _ProfileListItem(
+                            icon: Icons.favorite_rounded,
+                            text: "Liked EV's",
+                            onTap: () => Navigator.of(context).pushNamed('/liked-evs'),
+                          ),
+                          _ProfileListItem(
+                            icon: Icons.directions_car_outlined,
+                            text: 'Sell your car',
+                            onTap: () => Navigator.of(context).pushNamed('/post-car'),
+                          ),
+                        ],
+                      ),
+                      _buildSection(
+                        context,
+                        title: 'Support & More',
+                        items: [
+                          _ProfileListItem(
+                            icon: Icons.help_outline_rounded,
+                            text: 'Help Center',
+                            onTap: () => _launchHelpEmail(context),
+                          ),
+                          _ProfileListItem(
+                            icon: Icons.info_outline_rounded,
+                            text: 'About Evtopia',
+                            onTap: () => Navigator.of(context).pushNamed('/about'),
+                          ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                        child: _ProfileListItem(
+                          icon: Icons.logout_rounded,
+                          text: 'Log out',
+                          onTap: () async {
+                            await ref.read(authProvider.notifier).logout();
+                            if (context.mounted) {
+                              Navigator.of(context).pushReplacementNamed('/login');
+                            }
+                          },
+                          isDestructive: true,
+                          showArrow: false,
+                        ),
+                      ),
+                    ],
                   ),
-                  _ProfileListItem(
-                    icon: Icons.notifications_outlined,
-                    text: 'Notifications',
-                    onTap: () => Navigator.of(context).pushNamed('/notifications'),
-                    badgeCount: ref.watch(notificationProvider).unreadCount,
-                  ),
-                ],
-              ),
-              _buildSection(
-                context,
-                title: 'My Activity',
-                items: [
-                  _ProfileListItem(
-                    icon: Icons.favorite_rounded,
-                    text: "Liked EV's",
-                    onTap: () => Navigator.of(context).pushNamed('/liked-evs'),
-                  ),
-                  _ProfileListItem(
-                    icon: Icons.directions_car_outlined,
-                    text: 'Sell your car',
-                    onTap: () => Navigator.of(context).pushNamed('/post-car'),
-                  ),
-                ],
-              ),
-              _buildSection(
-                context,
-                title: 'Support & More',
-                items: [
-                  _ProfileListItem(
-                    icon: Icons.help_outline_rounded,
-                    text: 'Help Center',
-                    onTap: () {}, // Planned feature
-                  ),
-                  _ProfileListItem(
-                    icon: Icons.info_outline_rounded,
-                    text: 'About Evtopia',
-                    onTap: () {}, // Planned feature
-                  ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                child: _ProfileListItem(
-                  icon: Icons.logout_rounded,
-                  text: 'Log out',
-                  onTap: () async {
-                    await ref.read(authProvider.notifier).logout();
-                    if (context.mounted) {
-                      Navigator.of(context).pushReplacementNamed('/login');
-                    }
-                  },
-                  isDestructive: true,
-                  showArrow: false,
                 ),
               ),
               Center(
@@ -156,12 +173,52 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ),
                 ),
-              ),
+              ).animate().fadeIn(delay: 1.seconds),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _launchHelpEmail(BuildContext context) async {
+    final Uri emailLaunchUri = Uri(
+      scheme: 'mailto',
+      path: 'info@evtopia.co',
+      query: _encodeQueryParameters(<String, String>{
+        'subject': 'Help Needed',
+      }),
+    );
+
+    try {
+      if (await canLaunchUrl(emailLaunchUri)) {
+        await launchUrl(emailLaunchUri, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not launch email client'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('An error occurred while opening email'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  String? _encodeQueryParameters(Map<String, String> params) {
+    return params.entries
+        .map((MapEntry<String, String> e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .join('&');
   }
 
   Widget _buildSection(BuildContext context, {required String title, required List<Widget> items}) {

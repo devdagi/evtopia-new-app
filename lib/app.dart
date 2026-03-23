@@ -18,6 +18,7 @@ import 'models/notification_model.dart';
 import 'screens/notification_detail_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/post_car_screen.dart';
+import 'screens/about_screen.dart';
 import 'package:connectivity_wrapper/connectivity_wrapper.dart';
 import 'widgets/connectivity_banner.dart';
 import 'providers/connectivity_provider.dart';
@@ -209,6 +210,11 @@ class EvtopiaApp extends ConsumerWidget {
               return MaterialPageRoute(
                 settings: settings,
                 builder: (_) => const PostCarScreen(),
+              );
+            case '/about':
+              return MaterialPageRoute(
+                settings: settings,
+                builder: (_) => const AboutScreen(),
               );
             case '/verify-email':
               return _buildAuthRoute(const VerifyEmailScreen(), settings);
