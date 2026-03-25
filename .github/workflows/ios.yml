@@ -9,6 +9,7 @@ jobs:
   build:
     name: Build iOS
     runs-on: macos-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -16,11 +17,14 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
           cache: true
 
       - name: Clean Environment
         run: flutter clean
+
+      - name: Install Dependencies
+        run: flutter pub get
 
       - name: Clear iOS Pods
         run: |
@@ -28,13 +32,11 @@ jobs:
           rm -rf Pods
           rm -rf Podfile.lock
 
-      - name: Install Dependencies
-        run: flutter pub get
-
       - name: Install Pods
         run: |
           cd ios
           pod install
+          cd ..
 
       - name: Build IPA
         run: flutter build ipa --no-codesign
