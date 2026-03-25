@@ -12,7 +12,7 @@ dependencies:
   connectivity_wrapper: ^1.1.4
   app_settings: ^5.1.1
   gap: ^3.0.1
-  wakelock_plus: ^1.2.4
+  wakelock_plus: ^1.4.0
   page_transition: ^2.1.0
   flutter_svg: ^2.0.9
   flutter_riverpod: ^2.4.9
