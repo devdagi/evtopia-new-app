@@ -19,8 +19,22 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Clean Environment
+        run: flutter clean
+
+      - name: Clear iOS Pods
+        run: |
+          cd ios
+          rm -rf Pods
+          rm -rf Podfile.lock
+
       - name: Install Dependencies
         run: flutter pub get
+
+      - name: Install Pods
+        run: |
+          cd ios
+          pod install
 
       - name: Build IPA
         run: flutter build ipa --no-codesign
