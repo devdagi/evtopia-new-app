@@ -7,11 +7,10 @@ on:
 
 jobs:
   build:
-    name: Build iOS
     runs-on: macos-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Flutter
@@ -20,23 +19,29 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Clean Environment
+      - name: Clean
         run: flutter clean
 
-      - name: Install Dependencies
+      - name: Get dependencies
         run: flutter pub get
 
-      - name: Clear iOS Pods
+      - name: Precache iOS
+        run: flutter precache --ios
+
+      - name: Remove Pods
         run: |
           cd ios
-          rm -rf Pods
-          rm -rf Podfile.lock
+          rm -rf Pods Podfile.lock
+          cd ..
 
       - name: Install Pods
         run: |
           cd ios
           pod install
           cd ..
+
+      - name: Build iOS (generate files)
+        run: flutter build ios --release
 
       - name: Build IPA
         run: flutter build ipa --no-codesign
