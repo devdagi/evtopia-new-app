@@ -59,14 +59,12 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	    <key>NSCameraUsageDescription</key>
-        <string>For taking pictures</string>
-        <key>NSLocationAlwaysUsageDescription</key>
-        <string>Your location is not needed. This request has popped up due to a 3rd party framework used by the app in a context that does NOT need you to reveal you location</string>
-        <key>NSLocationWhenInUseUsageDescription</key>
-        <string>You will get zero benefit allowing this app accessing your location. You should never see this alert</string>
+        <string>Evtopia uses your camera to let you take and upload photos for your profile and app features.</string>
         <key>NSPhotoLibraryAddUsageDescription</key>
         <string>For capturing and uploading profile picture</string>
         <key>NSPhotoLibraryUsageDescription</key>
         <string>For uploading profile picture</string>
+        <key>ITSAppUsesNonExemptEncryption</key>
+        <false/>
 </dict>
 </plist>
