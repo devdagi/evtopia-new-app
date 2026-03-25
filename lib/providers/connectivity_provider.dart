@@ -17,19 +17,21 @@ class ConnectivityNotifier extends StateNotifier<bool> {
     final connectivity = Connectivity();
     
     // Initial check
-    final connectivityResult = await connectivity.checkConnectivity();
+    // The API now returns List<ConnectivityResult>
+    final List<ConnectivityResult> connectivityResult = await connectivity.checkConnectivity();
     _updateStatus(connectivityResult);
 
     // Listen for changes
-    _subscription = connectivity.onConnectivityChanged.listen((result) {
+    // The API now returns List<ConnectivityResult>
+    _subscription = connectivity.onConnectivityChanged.listen((List<ConnectivityResult> result) {
       _updateStatus(result);
     });
   }
 
-  void _updateStatus(ConnectivityResult result) {
-    // We consider it "connected" if it's wifi or mobile.
-    // This avoids the false negatives of socket pinging on mobile data.
-    state = result != ConnectivityResult.none;
+  void _updateStatus(List<ConnectivityResult> result) {
+    // If ANY result in the list is NOT ConnectivityResult.none, we consider the device connected.
+    // This handles cases where multiple network interfaces are active (e.g., Wifi + Mobile).
+    state = result.any((r) => r != ConnectivityResult.none);
   }
 
   @override
